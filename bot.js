@@ -1,34 +1,38 @@
+require('dotenv').config();
+
 const { Client, GatewayIntentBits } = require('discord.js');
 const express = require('express');
 const cors = require('cors');
 
 /* =========================
-   DISCORD BOT
+   ENV
    ========================= */
+const TOKEN = process.env.BOT_TOKEN;
+const PORT = process.env.PORT || 3000;
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildPresences
-  ]
-});
-
-client.login(process.env.BOT_TOKEN);
+if (!TOKEN) {
+  console.error('❌ BOT_TOKEN is missing in .env');
+  process.exit(1);
+}
 
 /* =========================
-   EXPRESS API (INSIDE BOT)
+   DISCORD CLIENT
    ========================= */
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds]
+});
 
+/* =========================
+   EXPRESS API
+   ========================= */
 const app = express();
 app.use(cors());
 
-app.get('/api/dashboard', async (req, res) => {
-  // Bot presence
-  const presence = client.user?.presence;
-  const status = presence?.status || 'offline'; 
-  // online | idle | dnd | offline
+app.get('/api/dashboard', (req, res) => {
+  const status =
+    client.user?.presence?.status ||
+    (client.isReady() ? 'online' : 'offline');
 
-  // Guild data
   const guilds = client.guilds.cache.map(guild => ({
     id: guild.id,
     name: guild.name,
@@ -39,10 +43,10 @@ app.get('/api/dashboard', async (req, res) => {
   }));
 
   res.json({
-    status,
+    status, // online | idle | dnd | offline
     servers: guilds.length,
     users: guilds.reduce((a, g) => a + g.members, 0),
-    commands: 0, // optional
+    commands: 0,
     serverList: guilds
   });
 });
@@ -50,15 +54,18 @@ app.get('/api/dashboard', async (req, res) => {
 /* =========================
    START API
    ========================= */
-
-app.listen(3000, () => {
-  console.log('Dashboard API → http://localhost:3000/api/dashboard');
+app.listen(PORT, () => {
+  console.log(`🌐 API running → http://localhost:${PORT}/api/dashboard`);
 });
 
 /* =========================
    BOT READY
    ========================= */
-
 client.once('ready', () => {
-  console.log(`Logged in as ${client.user.tag}`);
+  console.log(`🤖 Logged in as ${client.user.tag}`);
 });
+
+/* =========================
+   LOGIN
+   ========================= */
+client.login(TOKEN);
