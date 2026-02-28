@@ -1,2 +1,0 @@
-dotenv
-npm install discord.js express cors
