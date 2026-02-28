@@ -8,7 +8,7 @@ const cors = require('cors');
    ENV
    ========================= */
 const TOKEN = process.env.BOT_TOKEN;
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 if (!TOKEN) {
   console.error('❌ BOT_TOKEN is missing in .env');
