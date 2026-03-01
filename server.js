@@ -38,7 +38,7 @@ app.get('/api/dashboard', async (req, res) => {
     }));
 
     res.json({
-      idle,
+      online,
       servers,
       users: totalUsers,
       commands: 0,
