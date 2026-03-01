@@ -10,47 +10,43 @@ const PORT = process.env.PORT || 3000;
 
 const client = new Client({
   intents: [
-    GatewayIntentBits.Guilds
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers
   ]
 });
 
+// Login using ENV variable
 client.login(process.env.BOT_TOKEN);
 
-client.on('ready', () => {
-  console.log(`✅ Logged in as ${client.user.tag}`);
-  console.log(`🌐 Servers: ${client.guilds.cache.size}`);
-});
+// Dashboard API
+app.get('/api/dashboard', async (req, res) => {
+  try {
+    const online = client.isReady();
 
-app.get('/api/dashboard', (req, res) => {
+    const servers = client.guilds.cache.size;
 
-  if (!client.isReady()) {
-    return res.json({
-      status: "offline",
-      servers: 0,
-      users: 0,
-      totalOnline: 0,
-      totalOffline: 0,
-      commands: 0,
-      serverList: []
+    let totalUsers = 0;
+    client.guilds.cache.forEach(guild => {
+      totalUsers += guild.memberCount;
     });
+
+    const serverList = client.guilds.cache.map(guild => ({
+      id: guild.id,
+      name: guild.name,
+      members: guild.memberCount
+    }));
+
+    res.json({
+      online,
+      servers,
+      users: totalUsers,
+      commands: 0,
+      serverList
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
   }
-
-  const serverList = client.guilds.cache.map(guild => ({
-    id: guild.id,
-    name: guild.name,
-    members: guild.memberCount
-  }));
-
-  res.json({
-    status: "online",
-    servers: client.guilds.cache.size,
-    users: serverList.reduce((a, b) => a + b.members, 0),
-    totalOnline: 0,
-    totalOffline: 0,
-    commands: 0,
-    serverList
-  });
-
 });
 
 app.listen(PORT, () => {
