@@ -12,60 +12,58 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildPresences // ✅ ADDED
+    GatewayIntentBits.GuildPresences
   ]
 });
 
-// Login using ENV variable
 client.login(process.env.BOT_TOKEN);
 
-// ✅ Fetch all members when bot is ready
+// 🔥 FORCE FULL MEMBER CACHE
 client.on('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
   for (const guild of client.guilds.cache.values()) {
-    await guild.members.fetch(); // cache members for presence check
+    try {
+      await guild.members.fetch({ withPresences: true });
+      console.log(`Fetched members for ${guild.name}`);
+    } catch (err) {
+      console.log(`Failed fetching ${guild.name}`);
+    }
   }
 });
 
-// Dashboard API
 app.get('/api/dashboard', async (req, res) => {
   try {
 
     const status = client.isReady() ? "online" : "offline";
-    const servers = client.guilds.cache.size;
 
     let totalUsers = 0;
     let totalOnline = 0;
     let totalOffline = 0;
 
     client.guilds.cache.forEach(guild => {
+
       totalUsers += guild.memberCount;
 
       guild.members.cache.forEach(member => {
-        if (!member.presence || member.presence.status === "offline") {
+
+        if (!member.presence || member.presence.status === 'offline') {
           totalOffline++;
         } else {
           totalOnline++;
         }
-      });
-    });
 
-    const serverList = client.guilds.cache.map(guild => ({
-      id: guild.id,
-      name: guild.name,
-      members: guild.memberCount,
-      icon: guild.iconURL({ dynamic: true, size: 128 }) || null
-    }));
+      });
+
+    });
 
     res.json({
       status,
-      servers,
+      servers: client.guilds.cache.size,
       users: totalUsers,
-      totalOnline,     // ✅ ADDED
-      totalOffline,    // ✅ ADDED
-      commands: 0,
-      serverList
+      totalOnline,
+      totalOffline,
+      commands: 0
     });
 
   } catch (error) {
