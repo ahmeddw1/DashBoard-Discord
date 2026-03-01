@@ -10,66 +10,47 @@ const PORT = process.env.PORT || 3000;
 
 const client = new Client({
   intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildPresences
+    GatewayIntentBits.Guilds
   ]
 });
 
 client.login(process.env.BOT_TOKEN);
 
-// 🔥 FORCE FULL MEMBER CACHE
-client.on('ready', async () => {
-  console.log(`Logged in as ${client.user.tag}`);
-
-  for (const guild of client.guilds.cache.values()) {
-    try {
-      await guild.members.fetch({ withPresences: true });
-      console.log(`Fetched members for ${guild.name}`);
-    } catch (err) {
-      console.log(`Failed fetching ${guild.name}`);
-    }
-  }
+client.on('ready', () => {
+  console.log(`✅ Logged in as ${client.user.tag}`);
+  console.log(`🌐 Servers: ${client.guilds.cache.size}`);
 });
 
-app.get('/api/dashboard', async (req, res) => {
-  try {
+app.get('/api/dashboard', (req, res) => {
 
-    const status = client.isReady() ? "online" : "offline";
-
-    let totalUsers = 0;
-    let totalOnline = 0;
-    let totalOffline = 0;
-
-    client.guilds.cache.forEach(guild => {
-
-      totalUsers += guild.memberCount;
-
-      guild.members.cache.forEach(member => {
-
-        if (!member.presence || member.presence.status === 'offline') {
-          totalOffline++;
-        } else {
-          totalOnline++;
-        }
-
-      });
-
+  if (!client.isReady()) {
+    return res.json({
+      status: "offline",
+      servers: 0,
+      users: 0,
+      totalOnline: 0,
+      totalOffline: 0,
+      commands: 0,
+      serverList: []
     });
-
-    res.json({
-      status,
-      servers: client.guilds.cache.size,
-      users: totalUsers,
-      totalOnline,
-      totalOffline,
-      commands: 0
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
   }
+
+  const serverList = client.guilds.cache.map(guild => ({
+    id: guild.id,
+    name: guild.name,
+    members: guild.memberCount
+  }));
+
+  res.json({
+    status: "online",
+    servers: client.guilds.cache.size,
+    users: serverList.reduce((a, b) => a + b.members, 0),
+    totalOnline: 0,
+    totalOffline: 0,
+    commands: 0,
+    serverList
+  });
+
 });
 
 app.listen(PORT, () => {
